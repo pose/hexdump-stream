@@ -1,0 +1,31 @@
+{
+  "name": "hexdump-stream",
+  "version": "0.0.1",
+  "description": "Hexdump as a node.js stream.",
+  "main": "index.js",
+  "dependencies": {
+    "sprintf-js": "^1.0.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "./test.sh"
+  },
+  "bin": {
+    "_hd": "node ./index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/pose/hexdump-stream.git"
+  },
+  "keywords": [
+    "hexdump",
+    "hex",
+    "stream"
+  ],
+  "author": "Alberto Pose <albertopose@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/pose/hexdump-stream/issues"
+  },
+  "homepage": "https://github.com/pose/hexdump-stream#readme"
+}
