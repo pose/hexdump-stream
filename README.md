@@ -16,7 +16,7 @@ var stream = new Hexdump();
 process.stdin.pipe(stream).pipe(process.stdout);
 
 ```
-That program will output:
+Example:
 
 ```
 > $ echo 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce \
