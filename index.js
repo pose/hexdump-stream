@@ -7,18 +7,30 @@ function Hexdump(options) {
   Transform.call(this, options);
   this.offset = new Buffer(0);
   this.lines = 0;
-  this.prevLine = new Buffer(0);
+  this.prevLine = {buffer: new Buffer(0), start: 0, end: 0};
   this.isRepeating = true;
 }
 
 util.inherits(Hexdump, Transform);
 
-Hexdump.prototype._processLine = function (buffer) {
+function compare(buffer1, start1, end1, prevLine) {
+  var i;
+
+  for (i = 0; i < Math.max(end1 - start1, prevLine.end - prevLine.start); i++) {
+    if (buffer1[start1 + i] != prevLine.buffer[prevLine.start + i]) {
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
+Hexdump.prototype._processLine = function (buffer, start, end) {
   // TODO is this pushing too frequently? Is buffering a better idea?
-  if (buffer.length === 0) {
+  if (end - start === 0) {
     return;
   }
-  if (this.prevLine.compare(buffer) === 0) {
+  if (compare(buffer, start, end, this.prevLine) === 0) {
     this.lines += 16;
     if (!this.isRepeating) {
       this.push('*\n');
@@ -30,10 +42,10 @@ Hexdump.prototype._processLine = function (buffer) {
   this.push(sprintf("%08x  ", this.lines));
 
   var c;
-  var len = buffer.length;
+  var len = end - start;
   for (c = 0; c < 8; c++) {
     if (c < len) {
-      this.push(sprintf("%02x ", buffer[c]));
+      this.push(sprintf("%02x ", buffer[start + c]));
     } else {
       this.push('   ');
     }
@@ -43,7 +55,7 @@ Hexdump.prototype._processLine = function (buffer) {
 
   for (c = 8; c < 16; c++) {
     if(c < len) {
-      this.push(sprintf('%02x ', buffer[c]));
+      this.push(sprintf('%02x ', buffer[start + c]));
     } else {
       this.push('   ');
     }
@@ -55,10 +67,10 @@ Hexdump.prototype._processLine = function (buffer) {
   this.push('|');
 
   // ASCII Dump
-  for (c = 0; c < 16 ; c++) {
+  for (c = 0; c < 16; c++) {
     if (c<len) {
-      if (buffer[c] >= 32 && buffer[c] < 127) {
-        this.push(sprintf("%c", buffer[c]));
+      if (buffer[start + c] >= 32 && buffer[start + c] < 127) {
+        this.push(sprintf("%c", buffer[start + c]));
       } else {
         this.push('.'); // non-printable
       }
@@ -70,7 +82,7 @@ Hexdump.prototype._processLine = function (buffer) {
   this.push('|');
   }
   this.push('\n');
-  this.prevLine = buffer;
+  this.prevLine = {buffer: buffer, start: start, end: end};
 };
 
 Hexdump.prototype._endLine = function () {
@@ -94,7 +106,7 @@ Hexdump.prototype._transform = function (chunk, encoding, callback) {
     return callback();
   }
 
-  this._processLine(this.offset);
+  this._processLine(this.offset, 0, 16);
 
   this.offset = new Buffer(0);
 
@@ -103,7 +115,8 @@ Hexdump.prototype._transform = function (chunk, encoding, callback) {
 
   for (i = 1; i < lines; i++) {
     // TODO a more performant way of achieving this?
-    this._processLine(chunk.slice((16 - offsetLen) * i, (16 - offsetLen) * (i+1)));
+    // this._processLine(chunk.slice((16 - offsetLen) * i, (16 - offsetLen) * (i+1)));
+    this._processLine(chunk,(16 - offsetLen) * i, (16 - offsetLen) * (i+1));
   }
 
   var offset = chunk.length - (16 - offsetLen) * lines;
@@ -119,7 +132,7 @@ Hexdump.prototype._transform = function (chunk, encoding, callback) {
 
 Hexdump.prototype._flush = function (callback) {
   if (this.offset) {
-    this._processLine(this.offset);
+    this._processLine(this.offset, 0, this.offset.length);
   }
   this._endLine();
   callback();
