@@ -27,49 +27,51 @@ Hexdump.prototype._processLine = function (buffer) {
     return;
   }
   this.isRepeating = false;
-  this.push(sprintf("%08x  ", this.lines));
+  var stringToSend = '';
+  stringToSend += sprintf("%08x  ", this.lines);
 
   var c;
   var len = buffer.length;
   for (c = 0; c < 8; c++) {
     if (c < len) {
-      this.push(sprintf("%02x ", buffer[c]));
+      stringToSend += sprintf("%02x ", buffer[c]);
     } else {
-      this.push('   ');
+      stringToSend += '   ';
     }
   }
 
-  this.push(' ');
+  stringToSend += ' ';
 
   for (c = 8; c < 16; c++) {
     if(c < len) {
-      this.push(sprintf('%02x ', buffer[c]));
+      stringToSend += sprintf('%02x ', buffer[c]);
     } else {
-      this.push('   ');
+      stringToSend += '   ';
     }
   }
 
-  this.push(' ');
+  stringToSend += ' ';
 
   if (len > 0) {
-  this.push('|');
+    stringToSend += '|';
 
-  // ASCII Dump
-  for (c = 0; c < 16 ; c++) {
-    if (c<len) {
-      if (buffer[c] >= 32 && buffer[c] < 127) {
-        this.push(sprintf("%c", buffer[c]));
+    // ASCII Dump
+    for (c = 0; c < 16 ; c++) {
+      if (c<len) {
+        if (buffer[c] >= 32 && buffer[c] < 127) {
+          stringToSend += sprintf("%c", buffer[c]);
+        } else {
+          stringToSend += '.';
+        }
+        this.lines++;
       } else {
-        this.push('.'); // non-printable
+        break;
       }
-      this.lines++;
-    } else {
-      break;
     }
+    stringToSend += '|';
   }
-  this.push('|');
-  }
-  this.push('\n');
+  stringToSend += '\n';
+  this.push(stringToSend);
   this.prevLine = buffer;
 };
 
@@ -102,8 +104,9 @@ Hexdump.prototype._transform = function (chunk, encoding, callback) {
   var i;
 
   for (i = 1; i < lines; i++) {
+    var slice = chunk.slice((16 - offsetLen) * i, (16 - offsetLen) * (i+1));
     // TODO a more performant way of achieving this?
-    this._processLine(chunk.slice((16 - offsetLen) * i, (16 - offsetLen) * (i+1)));
+    this._processLine(slice);
   }
 
   var offset = chunk.length - (16 - offsetLen) * lines;
