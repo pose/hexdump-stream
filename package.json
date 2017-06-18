@@ -11,7 +11,7 @@
     "test": "./test.sh"
   },
   "bin": {
-    "_hd": "node ./index.js"
+    "_hd": "./index.js"
   },
   "repository": {
     "type": "git",
